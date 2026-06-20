@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: face-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: face
+  template:
+    metadata:
+      labels:
+        app: face
+    spec:
+      containers:
+        - name: face
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "run.py"]
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - secretRef:
+                name: face-recognition-secrets
+          env:
+            - name: API_BASE_URL
+              value: "api-service:8000"

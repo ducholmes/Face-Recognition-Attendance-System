@@ -1,0 +1,232 @@
+{% extends "layout/admin_base.html" %}
+
+{% block title %}Dashboard Học sinh - Hệ thống điểm danh{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 mt-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-person-circle me-2 text-success"></i>Dashboard Học sinh
+    </h1>
+</div>
+
+<!-- Row 1: Profile card -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-person-badge me-2"></i>Thông tin cá nhân
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small mb-1">Họ và tên</div>
+                        <div class="fw-semibold fs-5">{{ student.full_name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small mb-1">Mã số học sinh</div>
+                        <div class="fw-semibold fs-5"><code>{{ student.student_id }}</code></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small mb-1">Email</div>
+                        <div class="fw-semibold">{{ student.email }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small mb-1">Trạng thái khuôn mặt</div>
+                        {% if student.face_registered %}
+                        <span class="badge bg-success fs-6">
+                            <i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark fs-6">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>Chưa đăng ký
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if not student.face_registered %}
+                <div class="mt-3 pt-3 border-top">
+                    <a href="/student/face-register" class="btn btn-warning">
+                        <i class="bi bi-camera-fill me-2"></i>Đăng ký khuôn mặt ngay
+                    </a>
+                    <p class="text-muted small mt-2 mb-0">
+                        Bạn cần đăng ký khuôn mặt để hệ thống có thể nhận diện khi điểm danh.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Summary cards -->
+    <div class="col-lg-4">
+        <div class="row g-3 h-100">
+            <div class="col-12">
+                <div class="card border-start border-success border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-success text-uppercase small fw-bold mb-1">Tổng buổi có mặt</div>
+                                <div class="h2 mb-0 fw-bold" id="statPresent">—</div>
+                            </div>
+                            <div class="text-success opacity-50">
+                                <i class="bi bi-calendar-check-fill fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card border-start border-danger border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-danger text-uppercase small fw-bold mb-1">Tổng buổi vắng mặt</div>
+                                <div class="h2 mb-0 fw-bold" id="statAbsent">—</div>
+                            </div>
+                            <div class="text-danger opacity-50">
+                                <i class="bi bi-calendar-x-fill fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Attendance history table -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold">
+            <i class="bi bi-clock-history me-2"></i>Lịch sử điểm danh
+        </h6>
+        <span class="badge bg-secondary" id="historyCount">0 bản ghi</span>
+    </div>
+    <div class="card-body p-0">
+
+        <!-- Skeleton loader -->
+        <div id="historySkeleton" class="p-4">
+            <div class="skeleton-row mb-3"></div>
+            <div class="skeleton-row mb-3"></div>
+            <div class="skeleton-row mb-3"></div>
+            <div class="skeleton-row"></div>
+        </div>
+
+        <!-- Error area -->
+        <div id="historyError" class="p-3"></div>
+
+        <!-- Table -->
+        <div class="table-responsive" id="historyTableWrapper" style="display:none;">
+            <table class="table table-hover table-bordered mb-0" id="historyTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col" style="width:60px;">STT</th>
+                        <th scope="col">Ngày</th>
+                        <th scope="col" style="width:150px;">Giờ điểm danh</th>
+                        <th scope="col" style="width:130px;">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty state -->
+        <div id="historyEmptyState" class="text-center py-5" style="display:none;">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Chưa có lịch sử điểm danh.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render bảng lịch sử (tối đa 50 bản ghi)
+    function renderHistoryTable(history) {
+        const records = history.slice(0, 50);
+        const tbody = document.getElementById('historyTableBody');
+        const wrapper = document.getElementById('historyTableWrapper');
+        const emptyState = document.getElementById('historyEmptyState');
+        const historyCount = document.getElementById('historyCount');
+
+        historyCount.textContent = Math.min(history.length, 50) + ' bản ghi';
+
+        if (records.length === 0) {
+            wrapper.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        wrapper.style.display = 'block';
+
+        tbody.innerHTML = records.map((r, idx) => `
+            <tr>
+                <td class="text-center text-muted">${idx + 1}</td>
+                <td>${escapeHtml(r.date || '')}</td>
+                <td class="text-center">${formatTime(r.time)}</td>
+                <td>
+                    ${r.status === 'present'
+                        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Có mặt</span>'
+                        : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vắng mặt</span>'
+                    }
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Tải lịch sử điểm danh
+    async function loadHistory() {
+        const skeleton = document.getElementById('historySkeleton');
+        const wrapper = document.getElementById('historyTableWrapper');
+        const historyError = document.getElementById('historyError');
+        const emptyState = document.getElementById('historyEmptyState');
+
+        skeleton.style.display = 'block';
+        wrapper.style.display = 'none';
+        emptyState.style.display = 'none';
+        clearInlineError(historyError);
+
+        try {
+            const res = await apiFetch('/api/student/attendance-history');
+            if (!res) return;
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                showInlineError(historyError, err.detail || err.message || 'Không thể tải lịch sử điểm danh.');
+                return;
+            }
+
+            const data = await res.json();
+            const history = data.history || data.records || data || [];
+
+            renderHistoryTable(history);
+
+            // Cập nhật stats
+            const present = history.filter(r => r.status === 'present').length;
+            const absent = history.filter(r => r.status === 'absent').length;
+            document.getElementById('statPresent').textContent = present;
+            document.getElementById('statAbsent').textContent = absent;
+
+        } catch (err) {
+            showInlineError(historyError, err.message || 'Không thể tải dữ liệu. Vui lòng thử lại.');
+        } finally {
+            skeleton.style.display = 'none';
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadHistory();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+# Image processor
+opencv-contrib-python-headless==4.13.0.92
+mediapipe
+onnxruntime
+
+# HTTP
+websocket-client
+websockets
+uvicorn
+fastapi
+flask
+httpx
+
+# Email
+pydantic[email]
+
+# Frontend
+jinja2
+
+# Storage
+supabase
+pinecone
+
+# Math
+pandas
+
+# Environment Variables
+python-dotenv
+
+# Timezone
+pytz
+
+# Celery
+celery==5.3.6
+redis==5.0.1

@@ -1,0 +1,181 @@
+{% extends "layout/public_base.html" %}
+
+{% block title %}Đăng nhập - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="auth-header">
+    <i class="bi bi-camera-fill"></i>
+    <h3 class="mb-0">Face Attendance</h3>
+    <p class="mb-0 mt-1 opacity-75 small">Hệ thống điểm danh bằng khuôn mặt</p>
+</div>
+
+<div class="auth-body">
+    <h5 class="text-center mb-3">Đăng nhập</h5>
+    
+    <div id="alertContainer"></div>
+
+    <form id="loginForm">
+        <div class="mb-2">
+            <label for="email" class="form-label">
+                <i class="bi bi-envelope me-1"></i>Email
+            </label>
+            <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email"
+                placeholder="example@email.com"
+                required
+            >
+        </div>
+
+        <div class="mb-2">
+            <label for="password" class="form-label">
+                <i class="bi bi-lock me-1"></i>Mật khẩu
+            </label>
+            <div class="input-group">
+                <input 
+                    type="password" 
+                    class="form-control" 
+                    id="password" 
+                    name="password"
+                    placeholder="Nhập mật khẩu"
+                    required
+                >
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-2 form-check">
+            <input type="checkbox" class="form-check-input" id="rememberMe">
+            <label class="form-check-label small" for="rememberMe">
+                Ghi nhớ đăng nhập
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mb-2" id="loginBtn">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
+        </button>
+
+
+
+        <div class="text-center">
+            <p class="text-muted mb-0 small">
+                Chưa có tài khoản? 
+                <a href="/auth/register" class="text-decoration-none">Đăng ký ngay</a>
+            </p>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Use Frontend Proxy relative path
+    const API_BASE = "";
+
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    });
+
+    // Show alert
+    function showAlert(message, type = 'danger') {
+        const alertContainer = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alert);
+    }
+
+    // Handle login form submission
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const loginBtn = document.getElementById('loginBtn');
+        const originalText = loginBtn.innerHTML;
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập...';
+
+        const formData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await fetch(`/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remember me status
+                const isRememberMe = document.getElementById('rememberMe').checked;
+
+                // Save tokens and user info
+                authManager.saveAuth(data.access_token, data.refresh_token, data.user, isRememberMe);
+
+                if (isRememberMe) {
+                    localStorage.setItem('remembered_email', formData.email);
+                } else {
+                    localStorage.removeItem('remembered_email');
+                }
+
+                showAlert('Đăng nhập thành công! Đang chuyển hướng...', 'success');
+
+                // Redirect based on role
+                setTimeout(() => {
+                    const role = data.user.role;
+                    if (role === 'admin' || role === 'teacher') {
+                        window.location.href = '/dashboard';
+                    } else if (role === 'student') {
+                        window.location.href = '/student/profile';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }, 1000);
+            } else {
+                showAlert(data.message || 'Email hoặc mật khẩu không đúng!', 'danger');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showAlert('Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại!', 'danger');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = originalText;
+        }
+    });
+
+    // Initialize form with remembered email
+    window.addEventListener('DOMContentLoaded', function() {
+        const rememberedEmail = localStorage.getItem('remembered_email');
+        if (rememberedEmail) {
+            document.getElementById('email').value = rememberedEmail;
+            document.getElementById('rememberMe').checked = true;
+        }
+    });
+</script>
+{% endblock %}

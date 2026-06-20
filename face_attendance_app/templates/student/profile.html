@@ -1,0 +1,236 @@
+{% extends "layout/student_base.html" %}
+
+{% block title %}Hồ sơ của tôi - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 mt-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-person-circle me-2 text-primary"></i>Hồ sơ của tôi
+    </h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Thông tin cá nhân</h5>
+            </div>
+            <div class="card-body">
+                <div id="profileInfo">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Đang tải thông tin...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Thao tác nhanh</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="/student/register" class="btn btn-primary btn-lg">
+                        <i class="bi bi-camera-fill me-2"></i>Đăng ký khuôn mặt
+                    </a>
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Đăng ký khuôn mặt để sử dụng tính năng điểm danh tự động</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>Trạng thái</h5>
+            </div>
+            <div class="card-body">
+                <div id="registrationStatus">
+                    <div class="text-center py-2">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Đang kiểm tra...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Lịch sử điểm danh</h5>
+                <span class="badge bg-secondary" id="historyCount">0 bản ghi</span>
+            </div>
+            <div class="card-body p-0">
+                <!-- Loading state -->
+                <div id="historyLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Đang tải lịch sử điểm danh...</p>
+                </div>
+
+                <!-- Error state -->
+                <div id="historyError" class="text-center py-5 text-danger d-none">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <p class="mt-2">Không thể tải lịch sử điểm danh</p>
+                </div>
+
+                <!-- Table -->
+                <div id="historyTable" class="table-responsive d-none">
+                    <table class="table table-hover table-bordered mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width:60px;">STT</th>
+                                <th>Ngày</th>
+                                <th style="width:150px;">Giờ</th>
+                                <th style="width:130px;">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state -->
+                <div id="historyEmpty" class="text-center py-5 text-muted d-none">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Chưa có lịch sử điểm danh</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const user = authManager.getUser();
+    
+    if (!user) {
+        window.location.href = '/auth/login';
+        return;
+    }
+
+    // Display user info
+    const profileInfoDiv = document.getElementById('profileInfo');
+    profileInfoDiv.innerHTML = `
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label text-muted small">Email</label>
+                <div class="fw-semibold">${user.email}</div>
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted small">Vai trò</label>
+                <div class="fw-semibold">
+                    <span class="badge bg-info">Học sinh</span>
+                </div>
+            </div>
+            <div class="col-12">
+                <hr>
+                <p class="text-muted mb-0 small">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Để cập nhật thông tin cá nhân, vui lòng liên hệ giáo viên hoặc quản trị viên.
+                </p>
+            </div>
+        </div>
+    `;
+
+    // Check registration status
+    const statusDiv = document.getElementById('registrationStatus');
+    try {
+        const response = await authManager.apiRequest('/api/student/check-registration');
+        
+        if (response.ok) {
+            const data = await response.json();
+            const hasRegistered = data.success && data.registered;
+            
+            statusDiv.innerHTML = `
+                <div class="text-center">
+                    <i class="bi ${hasRegistered ? 'bi-check-circle-fill text-success' : 'bi-exclamation-circle-fill text-warning'}" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0 fw-semibold">${hasRegistered ? 'Đã đăng ký' : 'Chưa đăng ký'}</p>
+                    <small class="text-muted">${hasRegistered ? 'Khuôn mặt đã được đăng ký' : 'Chưa đăng ký khuôn mặt'}</small>
+                    ${hasRegistered && data.student ? `<div class="mt-2"><small class="text-muted">Mã SV: <code>${data.student.student_id}</code></small></div>` : ''}
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="bi bi-question-circle" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0 small">Không thể kiểm tra trạng thái</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error checking registration status:', error);
+        statusDiv.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                <p class="mt-2 mb-0 small">Lỗi khi kiểm tra trạng thái</p>
+            </div>
+        `;
+    }
+
+    // Load attendance history
+    await loadAttendanceHistory();
+});
+
+async function loadAttendanceHistory() {
+    const loadingDiv = document.getElementById('historyLoading');
+    const errorDiv = document.getElementById('historyError');
+    const tableDiv = document.getElementById('historyTable');
+    const emptyDiv = document.getElementById('historyEmpty');
+    const tableBody = document.getElementById('historyTableBody');
+    const countBadge = document.getElementById('historyCount');
+
+    try {
+        const response = await authManager.apiRequest('/api/student/attendance-history');
+        
+        loadingDiv.classList.add('d-none');
+
+        if (!response.ok) {
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+
+        const data = await response.json();
+        const history = data.history || [];
+
+        countBadge.textContent = `${history.length} bản ghi`;
+
+        if (history.length === 0) {
+            emptyDiv.classList.remove('d-none');
+            return;
+        }
+
+        // Render table
+        tableBody.innerHTML = history.map((record, index) => `
+            <tr>
+                <td class="text-center text-muted">${index + 1}</td>
+                <td>${record.date}</td>
+                <td class="text-center">${record.time}</td>
+                <td>
+                    ${record.status === 'present' 
+                        ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Có mặt</span>'
+                        : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vắng mặt</span>'
+                    }
+                </td>
+            </tr>
+        `).join('');
+
+        tableDiv.classList.remove('d-none');
+
+    } catch (error) {
+        console.error('Error loading attendance history:', error);
+        loadingDiv.classList.add('d-none');
+        errorDiv.classList.remove('d-none');
+    }
+}
+</script>
+{% endblock %}

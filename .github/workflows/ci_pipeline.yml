@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "ci", "front-end", "api"]
+  pull_request:
+    branches: [ "main", "ci", "front-end", "api" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+        cache: 'pip'
+
+    - name: Verify Setup
+      run: |
+        python --version
+        echo "Cấu hình Python và CI đã sẵn sàng!"
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 libgles2
+        python -m pip install --upgrade pip
+        pip install flake8 pytest pytest-playwright requests
+        playwright install --with-deps chromium
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Lint with flake8
+      run: |
+        # Dừng build ngay lập tức nếu có lỗi cú pháp (syntax errors) hoặc lỗi undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Cảnh báo các lỗi style khác nhưng không làm fail pipeline (exit-zero)
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run Tests with Pytest
+      env:
+        # Định nghĩa PYTHONPATH để Python tìm thấy các package trong thư mục gốc
+        PYTHONPATH: .
+        # Cấu hình các biến môi trường giả lập (Dummy Env Vars) tránh crash khi init client lúc import
+        SUPABASE_URL: "https://dummy-project-id.supabase.co"
+        SUPABASE_KEY: "dummy-supabase-service-role-key-for-ci-pipeline"
+        
+        PINECONE_KEY: "dummy-pinecone-api-key-for-ci-pipeline"
+        PINECONE_INDEX: "dummy-pinecone-index-for-ci-pipeline"
+        PINECONE_NAMESPACE: "dummy-pinecone-namespace-for-ci-pipeline"
+      run: |
+        python -m pytest -v
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test # Chỉ chạy khi build-and-test đã thành công
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Verify Docker Build
+      run: |
+        echo "Kiểm tra khả năng build của Dockerfile..."
+        docker build -t face-recognize:test .

@@ -1,0 +1,363 @@
+/**
+ * Authentication Styles
+ * Custom styles for login, register, and authentication pages
+ */
+
+/* Global Auth Styles */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Auth Card */
+.auth-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    max-width: 250px;
+    width: 100%;
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Auth Header */
+.auth-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+}
+
+.auth-header i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.auth-header h2 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.auth-header p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+}
+
+/* Auth Body */
+.auth-body {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+/* Form Controls */
+.auth-body .form-control {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.auth-body .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.auth-body .form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+    margin-bottom: 0.35rem;
+}
+
+/* Buttons */
+.auth-body .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 0.55rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.auth-body .btn-primary:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.auth-body .btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Guest Attendance Button */
+.auth-body .btn-outline-primary {
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 0.55rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.3s;
+}
+
+.auth-body .btn-outline-primary:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.auth-body .btn-outline-primary:active {
+    transform: translateY(0);
+}
+
+/* Role Selector */
+.role-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.role-option {
+    position: relative;
+}
+
+.role-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.role-option label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 0.4rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    background: white;
+    min-height: 70px;
+}
+
+.role-option label i {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+    color: #667eea;
+    transition: all 0.3s;
+}
+
+.role-option label span {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.role-option input[type="radio"]:checked + label {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.role-option input[type="radio"]:checked + label i {
+    transform: scale(1.2);
+}
+
+/* Password Toggle */
+.input-group .btn-outline-secondary {
+    border-color: #e0e0e0;
+    color: #666;
+}
+
+.input-group .btn-outline-secondary:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 10px;
+    border: none;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Links */
+.auth-body a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.auth-body a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* Form Check */
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.form-check-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 1rem;
+    }
+
+    .auth-header {
+        padding: 1.5rem;
+    }
+
+    .auth-header i {
+        font-size: 2.5rem;
+    }
+
+    .auth-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .auth-body {
+        padding: 1.5rem;
+    }
+
+    .role-selector {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .role-option label {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 0.75rem;
+        min-height: auto;
+    }
+
+    .role-option label i {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+        margin-right: 0.75rem;
+    }
+}
+
+/* Toast Notifications */
+.toast {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.toast-body {
+    padding: 1rem;
+    font-weight: 500;
+}
+
+/* User Dropdown in Navbar */
+.navbar .dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border: none;
+    margin-top: 0.5rem;
+}
+
+.navbar .dropdown-item {
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s;
+}
+
+.navbar .dropdown-item:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    color: #667eea;
+}
+
+.navbar .dropdown-item i {
+    width: 20px;
+}
+
+.navbar .dropdown-item-text {
+    padding: 0.75rem 1.5rem;
+}
+
+/* Utility Classes */
+.text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Smooth Transitions */
+* {
+    transition: color 0.3s, background-color 0.3s, border-color 0.3s;
+}
+
+button, a, input, select, textarea {
+    transition: all 0.3s ease;
+}
+
+/* Focus Visible for Accessibility */
+*:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}

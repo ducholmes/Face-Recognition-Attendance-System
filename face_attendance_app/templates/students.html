@@ -1,0 +1,357 @@
+{% extends "layout/admin_base.html" %}
+
+{% block title %}Danh sách học sinh - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 mt-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Danh sách học sinh
+    </h1>
+    <a href="/register" class="btn btn-success" data-role-required="admin">
+        <i class="bi bi-person-plus-fill me-2"></i>Đăng ký mới
+    </a>
+</div>
+
+<!-- Search -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="searchInput"
+                   placeholder="Tìm theo tên hoặc mã số học sinh..." />
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2"></i>Học sinh đã đăng ký</h6>
+        <span class="badge bg-primary" id="studentCount">
+            <span class="spinner-border spinner-border-sm" role="status"></span> Đang tải...
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <div id="loadingState" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="mt-3 text-muted">Đang tải danh sách học sinh...</p>
+        </div>
+        <div id="errorState" class="text-center py-5 text-danger d-none">
+            <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+            <p id="errorMessage">Không thể tải danh sách học sinh</p>
+            <button class="btn btn-primary" onclick="loadStudents()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Thử lại
+            </button>
+        </div>
+        <div id="tableContainer" class="d-none">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0" id="studentsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:60px;">STT</th>
+                            <th>Mã số</th>
+                            <th>Họ và tên</th>
+                            <th>Ngày sinh</th>
+                            <th>Giới tính</th>
+                            <th>Số điện thoại</th>
+                            <th style="width:140px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="emptyState" class="text-center py-5 text-muted d-none">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            Chưa có học sinh nào được đăng ký.
+            <div class="mt-3" data-role-required="admin">
+                <a href="/register" class="btn btn-success">
+                    <i class="bi bi-person-plus-fill me-2"></i>Đăng ký ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit student modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Sửa thông tin học sinh</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editStudentId">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="editPhone" placeholder="0123456789">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editGender" class="form-label">Giới tính</label>
+                        <select class="form-select" id="editGender">
+                            <option value="">-- Chọn --</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editBirthday" class="form-label">Ngày sinh</label>
+                        <input type="date" class="form-control" id="editBirthday">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="confirmEditBtn">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" id="editSpinner" role="status"></span>
+                    <span id="editText">Lưu thay đổi</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Bạn có chắc muốn xóa học sinh <strong id="deleteStudentName"></strong>?
+                <br><small class="text-danger">Hành động này không thể hoàn tác. Dữ liệu khuôn mặt cũng sẽ bị xóa.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <span class="spinner-border spinner-border-sm me-2 d-none" id="deleteSpinner" role="status"></span>
+                    <span id="deleteText">Xóa</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let deleteTargetId = null;
+    let deleteModal = null;
+    let editModal = null;
+    let allStudents = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        loadStudents();
+        
+        // Cập nhật UI dựa trên role
+        if (typeof updateUserUI === 'function') {
+            updateUserUI();
+        }
+    });
+
+    // Load students from API
+    async function loadStudents() {
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const tableContainer = document.getElementById('tableContainer');
+        const emptyState = document.getElementById('emptyState');
+
+        // Show loading
+        loadingState.classList.remove('d-none');
+        errorState.classList.add('d-none');
+        tableContainer.classList.add('d-none');
+        emptyState.classList.add('d-none');
+
+        try {
+            const response = await authManager.apiRequest('/api/students');
+            
+            if (!response.ok) {
+                throw new Error('Không thể tải danh sách học sinh');
+            }
+
+            const data = await response.json();
+            allStudents = Array.isArray(data) ? data : [];
+
+            // Hide loading
+            loadingState.classList.add('d-none');
+
+            if (allStudents.length === 0) {
+                emptyState.classList.remove('d-none');
+            } else {
+                tableContainer.classList.remove('d-none');
+                renderStudents(allStudents);
+            }
+
+        } catch (error) {
+            console.error('Error loading students:', error);
+            loadingState.classList.add('d-none');
+            errorState.classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = error.message;
+        }
+    }
+
+    // Render students table
+    function renderStudents(students) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        // Kiểm tra role của user hiện tại
+        const currentUser = authManager.getUser();
+        const isAdmin = currentUser && currentUser.role === 'admin';
+
+        students.forEach((student, index) => {
+            const row = document.createElement('tr');
+            row.dataset.name = (student.name || '').toLowerCase();
+            row.dataset.id = (student.student_id || '').toLowerCase();
+            
+            // Chỉ hiển thị nút sửa/xóa cho admin
+            const actionButtons = isAdmin ? `
+                <button class="btn btn-sm btn-outline-primary me-1"
+                        onclick="editStudent('${student.student_id}')"
+                        title="Sửa thông tin">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="deleteStudent('${student.student_id}', '${student.name}')"
+                        title="Xóa học sinh">
+                    <i class="bi bi-trash"></i>
+                </button>
+            ` : '<span class="text-muted small">Chỉ xem</span>';
+            
+            row.innerHTML = `
+                <td class="text-center text-muted">${index + 1}</td>
+                <td><code>${student.student_id || '—'}</code></td>
+                <td class="fw-semibold">${student.name || '—'}</td>
+                <td>${student.birthday || '—'}</td>
+                <td>${student.gender || '—'}</td>
+                <td>${student.phone || '—'}</td>
+                <td class="text-center">
+                    ${actionButtons}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('studentCount').textContent = students.length + ' học sinh';
+    }
+
+    // Search filter
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        const q = this.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('#tableBody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const name = row.dataset.name || '';
+            const id = row.dataset.id || '';
+            const match = !q || name.includes(q) || id.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        document.getElementById('studentCount').textContent = visible + ' học sinh';
+    });
+
+    // Edit student
+    function editStudent(studentId) {
+        const student = allStudents.find(s => s.student_id === studentId);
+        if (!student) return;
+
+        document.getElementById('editStudentId').value = student.student_id;
+        document.getElementById('editName').value = student.name || '';
+        document.getElementById('editPhone').value = student.phone || '';
+        document.getElementById('editGender').value = student.gender || '';
+        document.getElementById('editBirthday').value = student.birthday || '';
+
+        editModal.show();
+    }
+
+    document.getElementById('confirmEditBtn').addEventListener('click', async function () {
+        const studentId = document.getElementById('editStudentId').value;
+        const name = document.getElementById('editName').value.trim();
+        
+        if (!name) {
+            showToast('Vui lòng nhập họ tên!', 'warning');
+            return;
+        }
+
+        this.disabled = true;
+        document.getElementById('editSpinner').classList.remove('d-none');
+        document.getElementById('editText').textContent = 'Đang lưu...';
+
+        const updateData = {
+            name: name,
+            phone: document.getElementById('editPhone').value.trim() || null,
+            gender: document.getElementById('editGender').value || null,
+            birthday: document.getElementById('editBirthday').value || null
+        };
+
+        try {
+            const res = await authManager.apiRequest(`/students/${studentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                showToast('Cập nhật thông tin thành công!', 'success');
+                editModal.hide();
+                setTimeout(() => loadStudents(), 800);
+            } else {
+                showToast(data.error || 'Cập nhật thất bại.', 'danger');
+            }
+        } catch (err) {
+            showToast('Lỗi kết nối server.', 'danger');
+        } finally {
+            this.disabled = false;
+            document.getElementById('editSpinner').classList.add('d-none');
+            document.getElementById('editText').textContent = 'Lưu thay đổi';
+        }
+    });
+
+    // Delete student
+    function deleteStudent(studentId, name) {
+        deleteTargetId = studentId;
+        document.getElementById('deleteStudentName').textContent = name;
+        deleteModal.show();
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!deleteTargetId) return;
+        this.disabled = true;
+        document.getElementById('deleteSpinner').classList.remove('d-none');
+        document.getElementById('deleteText').textContent = 'Đang xóa...';
+
+        try {
+            const res = await authManager.apiRequest(`/students/${deleteTargetId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Đã xóa học sinh thành công!', 'success');
+                deleteModal.hide();
+                setTimeout(() => loadStudents(), 800);
+            } else {
+                showToast(data.error || 'Xóa thất bại.', 'danger');
+            }
+        } catch (err) {
+            showToast('Lỗi kết nối server.', 'danger');
+        } finally {
+            this.disabled = false;
+            document.getElementById('deleteSpinner').classList.add('d-none');
+            document.getElementById('deleteText').textContent = 'Xóa';
+        }
+    });
+</script>
+{% endblock %}

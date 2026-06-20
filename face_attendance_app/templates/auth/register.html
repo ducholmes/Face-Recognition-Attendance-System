@@ -1,0 +1,213 @@
+{% extends "layout/public_base.html" %}
+
+{% block title %}Đăng ký tài khoản - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="auth-header">
+    <i class="bi bi-person-plus-fill"></i>
+    <h3 class="mb-0">Face Attendance</h3>
+    <p class="mb-0 mt-1 opacity-75 small">Đăng ký tài khoản sinh viên</p>
+</div>
+
+<div class="auth-body">
+    <h5 class="text-center mb-3">Tạo tài khoản mới</h5>
+    
+    <div id="alertContainer"></div>
+
+    <form id="registerForm">
+        <div class="mb-2">
+            <label for="email" class="form-label">
+                <i class="bi bi-envelope me-1"></i>Email
+            </label>
+            <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email"
+                placeholder="example@email.com"
+                required
+            >
+            <small class="text-muted">Sử dụng email trường học của bạn</small>
+        </div>
+
+        <div class="mb-2">
+            <label for="password" class="form-label">
+                <i class="bi bi-lock me-1"></i>Mật khẩu
+            </label>
+            <div class="input-group">
+                <input 
+                    type="password" 
+                    class="form-control" 
+                    id="password" 
+                    name="password"
+                    placeholder="Tối thiểu 8 ký tự"
+                    required
+                    minlength="8"
+                >
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="confirmPassword" class="form-label">
+                <i class="bi bi-lock-fill me-1"></i>Xác nhận mật khẩu
+            </label>
+            <div class="input-group">
+                <input 
+                    type="password" 
+                    class="form-control" 
+                    id="confirmPassword" 
+                    name="confirmPassword"
+                    placeholder="Nhập lại mật khẩu"
+                    required
+                    minlength="8"
+                >
+                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="alert alert-info small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Lưu ý:</strong> Sau khi đăng ký tài khoản thành công, bạn cần đăng ký khuôn mặt để có thể điểm danh.
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mb-2" id="registerBtn">
+            <i class="bi bi-person-plus me-2"></i>Đăng ký tài khoản
+        </button>
+
+        <div class="text-center">
+            <p class="text-muted mb-0 small">
+                Đã có tài khoản? 
+                <a href="/auth/login" class="text-decoration-none">Đăng nhập ngay</a>
+            </p>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const API_BASE = "{{ api_base or 'http://localhost:8000' }}";
+
+    // Toggle password visibility
+    function setupPasswordToggle(inputId, buttonId) {
+        document.getElementById(buttonId).addEventListener('click', function() {
+            const passwordInput = document.getElementById(inputId);
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    }
+
+    setupPasswordToggle('password', 'togglePassword');
+    setupPasswordToggle('confirmPassword', 'toggleConfirmPassword');
+
+    // Show alert
+    function showAlert(message, type = 'danger') {
+        const alertContainer = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alert);
+    }
+
+    // Validate password match
+    function validatePasswords() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (password !== confirmPassword) {
+            showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+            return false;
+        }
+        
+        if (password.length < 8) {
+            showAlert('Mật khẩu phải có ít nhất 8 ký tự!', 'danger');
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Handle register form submission
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validate passwords
+        if (!validatePasswords()) {
+            return;
+        }
+
+        const registerBtn = document.getElementById('registerBtn');
+        const originalText = registerBtn.innerHTML;
+        registerBtn.disabled = true;
+        registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng ký...';
+
+        const formData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            role: 'student'  // Mặc định đăng ký với role student
+        };
+
+        try {
+            const response = await fetch(`/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showAlert('Đăng ký thành công! Đang chuyển đến trang đăng nhập...', 'success');
+
+                // Redirect to login page after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+            } else {
+                const errorMessage = data.message || data.detail || 'Đăng ký thất bại. Vui lòng thử lại!';
+                showAlert(errorMessage, 'danger');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Register error:', error);
+            showAlert('Có lỗi xảy ra khi đăng ký. Vui lòng thử lại!', 'danger');
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = originalText;
+        }
+    });
+
+    // Check if already logged in
+    window.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.role === 'admin' || user.role === 'teacher') {
+                window.location.href = '/dashboard';
+            } else if (user.role === 'student') {
+                window.location.href = '/student/profile';
+            }
+        }
+    });
+</script>
+{% endblock %}

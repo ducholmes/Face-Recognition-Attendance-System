@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["uvicorn", "face_attendance_app.main:app", "--host", "0.0.0.0", "--port", "5001"]
+          ports:
+            - containerPort: 5001
+          envFrom:
+            - secretRef:
+                name: face-recognition-secrets
+          env:
+            - name: API_BASE_URL
+              value: {{ .Values.env.apiBaseUrl | quote }}
+            - name: CLIENT_BASE_URL
+              value: {{ .Values.env.clientBaseUrl | quote }}

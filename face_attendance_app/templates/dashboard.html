@@ -1,0 +1,192 @@
+{% extends "layout/admin_base.html" %}
+
+{% block title %}Tổng quan - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 mt-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-speedometer2 me-2 text-primary"></i>Tổng quan hệ thống
+    </h1>
+    <span class="text-muted small" id="currentDate"></span>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-4 col-md-6">
+        <div class="card border-start border-primary border-4 shadow-sm">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-primary text-uppercase small fw-bold mb-1">Tổng học sinh</div>
+                    <div class="h2 mb-0 fw-bold" id="totalStudents">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                    </div>
+                </div>
+                <i class="bi bi-people-fill text-primary opacity-50" style="font-size:3rem;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="card border-start border-success border-4 shadow-sm">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-success text-uppercase small fw-bold mb-1">Lượt điểm danh hôm nay</div>
+                    <div class="h2 mb-0 fw-bold" id="todayLogs">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                    </div>
+                </div>
+                <i class="bi bi-calendar-check-fill text-success opacity-50" style="font-size:3rem;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-6">
+        <div class="card border-start border-warning border-4 shadow-sm">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-warning text-uppercase small fw-bold mb-1">Trạng thái hệ thống</div>
+                    <div class="h5 mb-0 fw-bold text-success">
+                        <i class="bi bi-circle-fill me-1" style="font-size:.6rem;"></i>Đang hoạt động
+                    </div>
+                </div>
+                <i class="bi bi-activity text-warning opacity-50" style="font-size:3rem;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-fill me-2 text-warning"></i>Thao tác nhanh</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="/attendance" class="btn btn-primary btn-lg">
+                        <i class="bi bi-camera-video-fill me-2"></i>Bắt đầu điểm danh
+                    </a>
+                    <a href="/register" class="btn btn-outline-success" data-role-required="admin">
+                        <i class="bi bi-person-plus-fill me-2"></i>Đăng ký học sinh mới
+                    </a>
+                    <a href="/students" class="btn btn-outline-secondary">
+                        <i class="bi bi-people-fill me-2"></i>Xem danh sách học sinh
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent attendance -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Điểm danh gần đây</h6>
+                <a href="/attendance/history" class="btn btn-sm btn-outline-light">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                <div id="attendanceLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+                <div id="attendanceList" class="d-none"></div>
+                <div id="attendanceEmpty" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>Chưa có dữ liệu điểm danh
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('currentDate').textContent =
+        new Date().toLocaleDateString('vi-VN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+    // Load dashboard data
+    async function loadDashboardData() {
+        try {
+            // Load students count
+            const studentsResponse = await authManager.apiRequest('/api/students');
+            if (studentsResponse.ok) {
+                const students = await studentsResponse.json();
+                const studentCount = Array.isArray(students) ? students.length : 0;
+                document.getElementById('totalStudents').textContent = studentCount;
+            } else {
+                document.getElementById('totalStudents').textContent = '—';
+            }
+
+            // Load today's attendance
+            const attendanceResponse = await authManager.apiRequest('api/attendance/today');
+            if (attendanceResponse.ok) {
+                const data = await attendanceResponse.json();
+                const todayCount = data.total || 0;
+                document.getElementById('todayLogs').textContent = todayCount;
+            } else {
+                document.getElementById('todayLogs').textContent = '—';
+            }
+
+            // Load recent attendance
+            const recentResponse = await authManager.apiRequest('/api/attendance');
+            if (recentResponse.ok) {
+                const data = await recentResponse.json();
+                const attendanceList = data.attendance || [];
+                
+                document.getElementById('attendanceLoading').classList.add('d-none');
+                
+                if (attendanceList.length > 0) {
+                    const listHtml = '<ul class="list-group list-group-flush">' +
+                        attendanceList.slice(0, 20).map(log => {
+                            const studentName = log.students?.name || log.student_id || '—';
+                            // Convert UTC to Vietnam timezone
+                            let time = '—';
+                            if (log.created_at) {
+                                const utcDate = new Date(log.created_at);
+                                time = utcDate.toLocaleString('sv-SE', { 
+                                    timeZone: 'Asia/Ho_Chi_Minh',
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }).replace(',', '');
+                            }
+                            const action = log.action || 'IN';
+                            return `
+                                <li class="list-group-item d-flex align-items-center justify-content-between py-2">
+                                    <div>
+                                        <div class="fw-semibold small">${studentName}</div>
+                                        <div class="text-muted" style="font-size:.75rem;">${time}</div>
+                                    </div>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>${action}
+                                    </span>
+                                </li>
+                            `;
+                        }).join('') +
+                        '</ul>';
+                    
+                    document.getElementById('attendanceList').innerHTML = listHtml;
+                    document.getElementById('attendanceList').classList.remove('d-none');
+                } else {
+                    document.getElementById('attendanceEmpty').classList.remove('d-none');
+                }
+            } else {
+                document.getElementById('attendanceLoading').classList.add('d-none');
+                document.getElementById('attendanceEmpty').classList.remove('d-none');
+            }
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            document.getElementById('totalStudents').textContent = '—';
+            document.getElementById('todayLogs').textContent = '—';
+            document.getElementById('attendanceLoading').classList.add('d-none');
+            document.getElementById('attendanceEmpty').classList.remove('d-none');
+        }
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', loadDashboardData);
+</script>
+{% endblock %}

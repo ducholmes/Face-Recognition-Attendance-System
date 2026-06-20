@@ -1,0 +1,317 @@
+{% extends "layout/admin_base.html" %}
+
+{% block title %}Lịch sử điểm danh - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4 mt-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử điểm danh
+    </h1>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Làm mới
+        </button>
+        <a href="/attendance" class="btn btn-primary btn-sm">
+            <i class="bi bi-camera-video-fill me-1"></i>Điểm danh ngay
+        </a>
+    </div>
+</div>
+
+<!-- Search & filter -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label fw-semibold">
+                    <i class="bi bi-search me-1"></i>Tìm kiếm
+                </label>
+                <input type="text" class="form-control" id="searchInput"
+                       placeholder="Tìm theo mã số học sinh..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                    <i class="bi bi-funnel me-1"></i>Lọc hành động
+                </label>
+                <select class="form-select" id="actionFilter">
+                    <option value="">Tất cả</option>
+                    <option value="IN">IN</option>
+                    <option value="OUT">OUT</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2"></i>Nhật ký điểm danh</h6>
+        <span class="badge bg-primary" id="logCount">
+            <span class="spinner-border spinner-border-sm" role="status"></span> Đang tải...
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <div id="loadingState" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="mt-3 text-muted">Đang tải lịch sử điểm danh...</p>
+        </div>
+        <div id="errorState" class="text-center py-5 text-danger d-none">
+            <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+            <p id="errorMessage">Không thể tải lịch sử điểm danh</p>
+            <button class="btn btn-primary" onclick="loadAttendanceHistory()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Thử lại
+            </button>
+        </div>
+        <div id="tableContainer" class="d-none">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0" id="historyTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:60px;">STT</th>
+                            <th>Mã số học sinh</th>
+                            <th>Họ và tên</th>
+                            <th>Hành động</th>
+                            <th>Thời gian</th>
+                            <th>Ảnh snapshot</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="emptyState" class="text-center py-5 text-muted d-none">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            Chưa có dữ liệu điểm danh.
+        </div>
+    </div>
+</div>
+
+<!-- Snapshot modal -->
+<div class="modal fade" id="snapshotModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-image me-2"></i>Ảnh snapshot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="snapshotLoading" class="py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Đang tải ảnh...</p>
+                </div>
+                <div id="snapshotContent" class="d-none">
+                    <img id="snapshotImg" src="" class="img-fluid rounded" alt="Snapshot" style="max-height: 500px;" />
+                    <p class="text-muted small mt-2" id="snapshotPath"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allLogs = [];
+    const supabaseUrl = '{{ supabase_url }}' || window.SUPABASE_URL || '';
+
+    // Load attendance history
+    async function loadAttendanceHistory() {
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const tableContainer = document.getElementById('tableContainer');
+        const emptyState = document.getElementById('emptyState');
+
+        // Show loading
+        loadingState.classList.remove('d-none');
+        errorState.classList.add('d-none');
+        tableContainer.classList.add('d-none');
+        emptyState.classList.add('d-none');
+
+        try {
+            const response = await authManager.apiRequest('/api/attendance');
+            
+            if (!response.ok) {
+                throw new Error('Không thể tải lịch sử điểm danh');
+            }
+
+            const data = await response.json();
+            allLogs = data.attendance || [];
+
+            // Hide loading
+            loadingState.classList.add('d-none');
+
+            if (allLogs.length === 0) {
+                emptyState.classList.remove('d-none');
+                document.getElementById('logCount').textContent = '0 bản ghi';
+            } else {
+                tableContainer.classList.remove('d-none');
+                renderAttendanceTable(allLogs);
+            }
+
+        } catch (error) {
+            console.error('Error loading attendance history:', error);
+            loadingState.classList.add('d-none');
+            errorState.classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = error.message;
+        }
+    }
+
+    // Render attendance table
+    function renderAttendanceTable(logs) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        logs.forEach((log, index) => {
+            const studentId = log.student_id || '—';
+            const studentName = log.students?.name || '—';
+            const action = log.action || 'IN';
+            
+            // Convert UTC to Vietnam timezone
+            let time = '—';
+            let date = '';
+            if (log.created_at) {
+                const utcDate = new Date(log.created_at);
+                // Format to Vietnam timezone (Asia/Ho_Chi_Minh)
+                time = utcDate.toLocaleString('sv-SE', { 
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }).replace(',', '');
+                date = utcDate.toLocaleDateString('sv-SE', { 
+                    timeZone: 'Asia/Ho_Chi_Minh'
+                });
+            }
+            
+            const imagePath = log.image_path || '';
+
+            const row = document.createElement('tr');
+            row.dataset.id = studentId.toLowerCase();
+            row.dataset.action = action.toUpperCase();
+            row.dataset.date = date;
+            
+            const badgeClass = action === 'OUT' ? 'bg-warning text-dark' : 'bg-success';
+            const imageButton = imagePath
+                ? `<a href="#" class="btn btn-sm btn-outline-secondary" onclick="showSnapshot('${imagePath}'); return false;">
+                     <i class="bi bi-image me-1"></i>Xem ảnh
+                   </a>`
+                : '<span class="text-muted small">—</span>';
+
+            row.innerHTML = `
+                <td class="text-center text-muted">${index + 1}</td>
+                <td><code>${studentId}</code></td>
+                <td class="fw-semibold">${studentName}</td>
+                <td><span class="badge ${badgeClass}">${action}</span></td>
+                <td class="text-muted small">${time}</td>
+                <td>${imageButton}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('logCount').textContent = logs.length + ' bản ghi';
+    }
+
+    // Helper: parse date from ISO string
+    function parseDate(isoString) {
+        if (!isoString) return null;
+        return isoString.substring(0, 10); // YYYY-MM-DD
+    }
+
+    // Search + filter
+    function applyFilters() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        const action = document.getElementById('actionFilter').value.toUpperCase();
+        
+        const rows = document.querySelectorAll('#tableBody tr');
+        let visible = 0;
+        
+        rows.forEach(row => {
+            const id = row.dataset.id || '';
+            const rowAction = row.dataset.action || '';
+            
+            const matchId = !q || id.includes(q);
+            const matchAction = !action || rowAction === action;
+            
+            const match = matchId && matchAction;
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        
+        document.getElementById('logCount').textContent = visible + ' bản ghi';
+    }
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('keyup', applyFilters);
+    document.getElementById('actionFilter').addEventListener('change', applyFilters);
+
+    // Snapshot modal
+    let snapshotModal;
+    document.addEventListener('DOMContentLoaded', () => {
+        snapshotModal = new bootstrap.Modal(document.getElementById('snapshotModal'));
+        loadAttendanceHistory();
+    });
+
+    function showSnapshot(path) {
+        // Show modal with loading state
+        const loadingDiv = document.getElementById('snapshotLoading');
+        const contentDiv = document.getElementById('snapshotContent');
+        loadingDiv.classList.remove('d-none');
+        contentDiv.classList.add('d-none');
+        snapshotModal.show();
+        
+        // Encode path to handle special characters and slashes
+        const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+        const imgUrl = `/api/snapshots/${encodedPath}`;
+        
+        console.log('[Snapshot] Original path:', path);
+        console.log('[Snapshot] Encoded path:', encodedPath);
+        console.log('[Snapshot] Full URL:', imgUrl);
+        
+        // Set image source with authentication
+        const img = document.getElementById('snapshotImg');
+        img.src = '';  // Clear previous image
+        
+        // Fetch image with authentication
+        authManager.apiRequest(imgUrl)
+            .then(response => {
+                console.log('[Snapshot] Response status:', response.status);
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    return response.text().then(text => {
+                        console.error('[Snapshot] Error response:', text);
+                        throw new Error('Không thể tải ảnh: ' + response.status);
+                    });
+                }
+            })
+            .then(blob => {
+                console.log('[Snapshot] Blob received, size:', blob.size);
+                const objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                document.getElementById('snapshotPath').textContent = path;
+                
+                // Show image, hide loading
+                loadingDiv.classList.add('d-none');
+                contentDiv.classList.remove('d-none');
+                
+                // Clean up object URL when modal is hidden
+                document.getElementById('snapshotModal').addEventListener('hidden.bs.modal', () => {
+                    URL.revokeObjectURL(objectUrl);
+                }, { once: true });
+            })
+            .catch(error => {
+                console.error('Error loading snapshot:', error);
+                snapshotModal.hide();
+                showToast('Không thể tải ảnh snapshot: ' + error.message, 'danger');
+            });
+    }
+</script>
+{% endblock %}

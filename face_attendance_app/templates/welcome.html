@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Face Attendance System - Hệ thống điểm danh bằng khuôn mặt</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 1s ease-out;
+        }
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        .hero-buttons {
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .hero-buttons .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-light {
+            background: white;
+            color: #667eea;
+        }
+        .btn-light:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .btn-outline-light:hover {
+            transform: translateY(-3px);
+            background: rgba(255,255,255,0.2);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .feature-card {
+            padding: 2rem;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .features-section {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .hero-image {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="hero-title">
+                        <i class="bi bi-camera-fill me-3"></i>
+                        Face Attendance
+                    </h1>
+                    <p class="hero-subtitle">
+                        Hệ thống điểm danh thông minh bằng nhận diện khuôn mặt
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="/auth/login" class="btn btn-light btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
+                        </a>
+                        <a href="/auth/register" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-person-plus me-2"></i>Đăng ký
+                        </a>
+                        <a href="/attendance" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-camera-video me-2"></i>Điểm danh
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="hero-image">
+                        <i class="bi bi-person-bounding-box" style="font-size: 15rem; opacity: 0.9;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Tính năng nổi bật</h2>
+                <p class="lead text-muted">Giải pháp điểm danh hiện đại, chính xác và tiện lợi</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-lightning-charge-fill feature-icon"></i>
+                        <h4 class="mb-3">Nhanh chóng</h4>
+                        <p class="text-muted">
+                            Nhận diện khuôn mặt trong tích tắc, tiết kiệm thời gian điểm danh
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-shield-check feature-icon"></i>
+                        <h4 class="mb-3">Chính xác</h4>
+                        <p class="text-muted">
+                            Công nghệ AI tiên tiến đảm bảo độ chính xác cao trong nhận diện
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-graph-up-arrow feature-icon"></i>
+                        <h4 class="mb-3">Quản lý dễ dàng</h4>
+                        <p class="text-muted">
+                            Theo dõi và quản lý dữ liệu điểm danh một cách trực quan
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-people-fill feature-icon"></i>
+                        <h4 class="mb-3">Phân quyền rõ ràng</h4>
+                        <p class="text-muted">
+                            Hệ thống phân quyền Admin, Giáo viên và Học sinh
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-clock-history feature-icon"></i>
+                        <h4 class="mb-3">Lịch sử đầy đủ</h4>
+                        <p class="text-muted">
+                            Lưu trữ và tra cứu lịch sử điểm danh mọi lúc mọi nơi
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="bi bi-phone feature-icon"></i>
+                        <h4 class="mb-3">Responsive</h4>
+                        <p class="text-muted">
+                            Giao diện thân thiện, tương thích mọi thiết bị
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="bi bi-camera-fill me-2"></i>
+                Face Attendance System &copy; 2526
+            </p>
+            <p class="text-muted small mb-0 mt-2">
+                Hệ thống điểm danh bằng nhận diện khuôn mặt
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

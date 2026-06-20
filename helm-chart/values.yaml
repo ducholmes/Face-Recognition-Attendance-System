@@ -1,0 +1,13 @@
+image:
+  repository: ducmonday/face-recognition
+  tag: v1.0.1
+  pullPolicy: Always
+
+ingress:
+  enabled: true
+  className: "ngrok"
+  host: "result-bulge-grievance.ngrok-free.dev"
+
+env:
+  apiBaseUrl: "http://api-service:8000"
+  clientBaseUrl: "http://face-service:5000"
